@@ -20,41 +20,58 @@ db = SQLAlchemy(metadata=metadata)
 class Planet(db.Model, SerializerMixin):
     __tablename__ = 'planets'
 
+    serialize_rules = ('-missions.scientist', '-missions.planet')
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     distance_from_earth = db.Column(db.Integer)
     nearest_star = db.Column(db.String)
 
-    # Add relationship
-
-    # Add serialization rules
-
+    missions = db.relationship("Mission", cascade="all, delete-orphan", backref="planet")
 
 class Scientist(db.Model, SerializerMixin):
     __tablename__ = 'scientists'
+
+    serialize_rules = ('-missions.planet', '-missions.scientist')
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     field_of_study = db.Column(db.String)
 
-    # Add relationship
+    missions = db.relationship("Mission", cascade="all, delete-orphan", backref="scientist")
 
-    # Add serialization rules
-
-    # Add validation
+    @validates('name', 'field_of_study')
+    def validate_scientist(self, key, entry):
+        if key == 'name' :
+            if entry == None or entry == '':
+                raise ValueError("Scientist must have a name")
+        if key == 'field_of_study':    
+            if entry == None or entry == '':
+                raise ValueError("field of study must exist")
+        return entry
 
 
 class Mission(db.Model, SerializerMixin):
     __tablename__ = 'missions'
 
+    serialize_rules = ('-planet.missions', '-scientist.missions')
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
 
-    # Add relationships
+    planet_id = db.Column(db.Integer, db.ForeignKey('planets.id'))
+    scientist_id = db.Column(db.Integer, db.ForeignKey('scientists.id'))
 
-    # Add serialization rules
+    @validates('name', 'scientist_id', 'planet_id')
+    def validate_scientist(self, key, entry):
+        if key == 'name' :
+            if entry == None or entry == '':
+                raise ValueError("Mission must have a name")
+        if key == 'scientist_id':    
+            if entry == None or entry == '':
+                raise ValueError("Mission must have a scientist")
+        if key == 'planet_id':    
+            if entry == None or entry == '':
+                raise ValueError("Mission must have a planet")
+        return entry
 
-    # Add validation
-
-
-# add any models you may need.
